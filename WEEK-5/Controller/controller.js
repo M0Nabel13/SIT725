@@ -1,34 +1,13 @@
-// Controller/controller.js
+const model = require('../Model/data');
 
-// Import functions from the Model
-import { addTask, getTasks } from '../Model/data.js';
+function fetchTasks(req, res) {
+    res.json(model.getTasks());
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-    const taskInput = document.getElementById('taskInput');
-    const addTaskBtn = document.getElementById('addTaskBtn');
-    const taskList = document.getElementById('taskList');
+function createTask(req, res) {
+    const task = req.body;
+    model.addTask(task);
+    res.status(201).json({ message: 'Task added', task });
+}
 
-    // Function to add a task and update the list
-    const addTaskToModel = () => {
-        const task = taskInput.value.trim();
-        if (task) {
-            addTask(task); // Add task to the Model
-            updateView();
-            taskInput.value = ''; // Clear the input field
-        }
-    };
-
-    // Function to update the View with tasks from the Model
-    const updateView = () => {
-        const tasks = getTasks(); // Get tasks from the Model
-        taskList.innerHTML = ''; // Clear existing tasks
-        tasks.forEach((task) => {
-            const listItem = document.createElement('li');
-            listItem.textContent = task; // Set task text
-            taskList.appendChild(listItem); // Add to the list
-        });
-    };
-
-    // Attach event listener to the button
-    addTaskBtn.addEventListener('click', addTaskToModel);
-});
+module.exports = { fetchTasks, createTask };

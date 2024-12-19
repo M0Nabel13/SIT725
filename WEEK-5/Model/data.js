@@ -1,15 +1,11 @@
-// Model/data.js
-
-// An array to store tasks
 let tasks = [];
 
-// Function to add a task
-export function addTask(task) {
-    tasks.push(task);
+function getTasks() {
     return tasks;
 }
 
-// Function to get all tasks
-export function getTasks() {
-    return tasks;
+function addTask(task) {
+    tasks.push(task);
 }
+
+module.exports = { getTasks, addTask };
