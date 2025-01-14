@@ -1,50 +1,64 @@
-const chai = require("chai");
-const chaiHttp = require("chai-http");
-const server = require("../server");
-const { expect } = chai;
-
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+const app = require('../Router/router'); 
 chai.use(chaiHttp);
 
-describe("Task Manager API", function () {
-    it("should return status 200 and an array on GET /api/tasks", function (done) {
-        chai.request(server)
-            .get("/api/tasks")
-            .end((err, res) => {
-                expect(res).to.have.status(200);
-                expect(res.body).to.be.an("array");
-                done();
-            });
+const { expect } = chai;
+
+let tasks = []; 
+
+describe('Task API Tests', () => {
+    beforeEach(async () => {
+        
+        await chai.request(app).post('/api/reset');
     });
 
-    it("should return status 201 and the new task on POST /api/tasks", function (done) {
-        const newTask = { name: "Test Task", details: "This is a test" };
-        chai.request(server)
-            .post("/api/tasks")
-            .send(newTask)
-            .end((err, res) => {
-                expect(res).to.have.status(201);
-                expect(res.body).to.include.keys("message", "task");
-                expect(res.body.task).to.deep.include(newTask);
-                done();
-            });
+    describe('GET /api/tasks', () => {
+        it('should return a list of tasks with status 200', async () => {
+            const response = await chai.request(app).get('/api/tasks');
+            expect(response.status).to.be.equal(200);
+            expect(response.body).to.be.an('array');
+        });
     });
 
-    it("should return status 200 and confirm task deletion on DELETE /api/tasks/:index", function (done) {
-        const newTask = { name: "Task to delete", details: "Delete this task" };
+    describe('POST /api/tasks', () => {
+        it('should add a new task and return it with status 201', async () => {
+            const newTask = { description: 'Test task' };
+            const response = await chai.request(app).post('/api/tasks').send(newTask);
+            expect(response.status).to.be.equal(201);
+            expect(response.body).to.have.property('description', 'Test task');
+        });
+    });
 
-        // Add the task first
-        chai.request(server)
-            .post("/api/tasks")
-            .send(newTask)
-            .end(() => {
-                // Delete the task at index 0
-                chai.request(server)
-                    .delete("/api/tasks/0")
-                    .end((err, res) => {
-                        expect(res).to.have.status(200);
-                        expect(res.body).to.have.property("message", "Task deleted");
-                        done();
-                    });
-            });
+    describe('POST /api/tasks - Prevent Duplicates', () => {
+        it('should not allow duplicate tasks to be added', async () => {
+            const task = { description: 'Unique Task' };
+
+            
+            const firstResponse = await chai.request(app).post('/api/tasks').send(task);
+            expect(firstResponse.status).to.be.equal(201);
+
+            
+            const secondResponse = await chai.request(app).post('/api/tasks').send(task);
+            expect(secondResponse.status).to.be.equal(400);
+            expect(secondResponse.body).to.have.property('error', 'Task already exists');
+        });
+    });
+
+    describe('POST /api/tasks - Invalid Input', () => {
+        it('should return status 400 for invalid input', async () => {
+            const invalidTask = {};
+            const response = await chai.request(app).post('/api/tasks').send(invalidTask);
+            expect(response.status).to.be.equal(400);
+            expect(response.body).to.have.property('error', 'Invalid task data');
+        });
+    });
+
+    describe('DELETE /api/tasks/:index - Invalid Index', () => {
+        it('should return status 400 for invalid index', async () => {
+            const response = await chai.request(app).delete('/api/tasks/999');
+            expect(response.status).to.be.equal(400);
+            expect(response.body).to.have.property('error', 'Invalid task index');
+        });
     });
 });
